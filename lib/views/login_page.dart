@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_colors.dart';
+import 'cardapio_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,10 +11,19 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Esses controladores servem para o Flutter conseguir ler o que o usuário digitou
+  // Controladores para capturar o que o usuário digita
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mesaController = TextEditingController();
+
+  @override
+  void dispose() {
+    // Limpeza de memória ao sair da tela
+    _nomeController.dispose();
+    _emailController.dispose();
+    _mesaController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
               
-              // Campo Nome
+              // Nome
               TextField(
                 controller: _nomeController,
                 decoration: const InputDecoration(
@@ -51,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
 
-              // Campo Email ou Telefone
+              // Email
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -63,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
 
-              // Campo Mesa
+              // Mesa
               TextField(
                 controller: _mesaController,
                 keyboardType: TextInputType.number,
@@ -76,27 +87,50 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 40),
 
-              // Botão de Confirmar
+              // Botão Confirmar
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.azulPrincipal,
                   minimumSize: const Size(double.infinity, 60),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () {
-                  // Aqui pegamos o que foi digitado
+                onPressed: () async {
                   String nome = _nomeController.text;
                   String mesa = _mesaController.text;
+                  String email = _emailController.text;
 
                   if (nome.isEmpty || mesa.isEmpty) {
-                    // Aviso simples se faltar o básico
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Por favor, preencha pelo menos Nome e Mesa!")),
                     );
                   } else {
-                    // ignore: avoid_print
-                    print("Cliente: $nome na Mesa: $mesa");
-                    // Depois vamos programar para salvar isso no Supabase!
+                    try {
+                      // Comando para salvar no Supabase
+                      await Supabase.instance.client.from('clientes').insert({
+                        'nome': nome,
+                        'mesa': mesa,
+                        'email': email.isEmpty ? 'sem@email.com' : email,
+                      });
+
+                      // Verifica se a tela ainda está ativa (mounted)
+                      if (!context.mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Identificado com sucesso!")),
+                      );
+
+                      // Navega para o Cardápio
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CardapioPage()),
+                      );
+
+                    } catch (erro) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Erro ao salvar no banco: $erro")),
+                      );
+                    }
                   }
                 },
                 child: const Text(

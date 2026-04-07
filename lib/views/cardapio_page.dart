@@ -10,7 +10,6 @@ class CardapioPage extends StatefulWidget {
 }
 
 class _CardapioPageState extends State<CardapioPage> {
-  // Aqui estamos simulando o que vai vir do Supabase no futuro
   final List<Produto> meusProdutos = [
     Produto(
       nome: "Água de Coco",
@@ -50,19 +49,19 @@ class _CardapioPageState extends State<CardapioPage> {
     Produto(
       nome: "Caipirinha de Maracujá",
       categoria: "Bebidas",
-      imagemPath: "assets/caipirinha_maracuja.jpg", // Foto da de Maracujá
+      imagemPath: "assets/caipirinha_maracuja.jpg",
       opcoes: [OpcaoProduto(descricao: "Maracujá", preco: 20.0)],
     ),
     Produto(
       nome: "Caipirinha de Morango",
       categoria: "Bebidas",
-      imagemPath: "assets/caipirinha_morango.jpg", // Foto da de Morango
+      imagemPath: "assets/caipirinha_morango.jpg",
       opcoes: [OpcaoProduto(descricao: "Morango", preco: 20.0)],
     ),
     Produto(
       nome: "Caipirinha de Pitaya",
       categoria: "Bebidas",
-      imagemPath: "assets/caipirinha_pitaya.jpg", // Foto da de Pitaya
+      imagemPath: "assets/caipirinha_pitaya.jpg",
       opcoes: [OpcaoProduto(descricao: "Pitaya", preco: 25.0)],
     ),
     Produto(
@@ -99,15 +98,14 @@ class _CardapioPageState extends State<CardapioPage> {
       body: ListView.builder(
         itemCount: meusProdutos.length,
         itemBuilder: (context, index) {
-          final produto = meusProdutos[index];
-          return CardProduto(produto: produto);
+          return CardProduto(produto: meusProdutos[index]);
         },
       ),
     );
   }
 }
 
-// Criando um widget separado só para o "quadradinho" do produto
+// ESTA É A CLASSE QUE DESENHA O ITEM (Onde resolvemos o erro de pixels)
 class CardProduto extends StatefulWidget {
   final Produto produto;
   const CardProduto({super.key, required this.produto});
@@ -134,44 +132,39 @@ class _CardProdutoState extends State<CardProduto> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Row( // Row permite colocar a foto ao lado do texto
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- MOSTRAR A IMAGEM AQUI ---
+            // FOTO
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 widget.produto.imagemPath,
-                height: 90,
-                width: 90,
+                height: 80,
+                width: 80,
                 fit: BoxFit.cover,
-                // Se o nome do arquivo estiver errado na pasta, mostra o ícone abaixo
                 errorBuilder: (context, error, stackTrace) => Container(
-                  height: 90,
-                  width: 90,
-                  color: Colors.grey[200],
+                  height: 80, width: 80, color: Colors.grey[200],
                   child: const Icon(Icons.fastfood, color: Colors.grey),
                 ),
               ),
             ),
-            
-            const SizedBox(width: 15), // Espaçamento entre foto e texto
 
-            // --- CONTEÚDO DO PRODUTO ---
+            const SizedBox(width: 12),
+
+            // CONTEÚDO EXPANDIDO (Para não dar erro de pixels)
             Expanded(
               child: Column(
-                mainAxisSize: MainAxisSize.min, 
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.produto.nome,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
-                  
-                  // Seletor de opções
+                  const SizedBox(height: 5),
+
+                  // Seletor de Opções
                   Container(
-                    height: 40,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
@@ -186,7 +179,7 @@ class _CardProdutoState extends State<CardProduto> {
                             value: opcao,
                             child: Text(
                               "${opcao.descricao} - R\$ ${opcao.preco.toStringAsFixed(2)}",
-                              style: const TextStyle(fontSize: 14),
+                              style: const TextStyle(fontSize: 13),
                             ),
                           );
                         }).toList(),
@@ -197,28 +190,32 @@ class _CardProdutoState extends State<CardProduto> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
-                  // Quantidade e Botão
+                  // Quantidade e Botão Adicionar
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
-                          IconButton(
-                            onPressed: () { if (quantidade > 1) setState(() { quantidade--; }); },
-                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                          GestureDetector(
+                            onTap: () { if (quantidade > 1) setState(() { quantidade--; }); },
+                            child: const Icon(Icons.remove_circle, color: Colors.red, size: 24),
                           ),
-                          Text("$quantidade", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          IconButton(
-                            onPressed: () { setState(() { quantidade++; }); },
-                            icon: const Icon(Icons.add_circle, color: Colors.green),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text("$quantidade", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                          GestureDetector(
+                            onTap: () { setState(() { quantidade++; }); },
+                            child: const Icon(Icons.add_circle, color: Colors.green, size: 24),
                           ),
                         ],
                       ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.azulPrincipal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                         onPressed: () {
@@ -226,7 +223,7 @@ class _CardProdutoState extends State<CardProduto> {
                             SnackBar(content: Text("${widget.produto.nome} adicionado!")),
                           );
                         },
-                        child: const Text("Adicionar", style: TextStyle(color: Colors.white)),
+                        child: const Text("Adicionar", style: TextStyle(color: Colors.white, fontSize: 12)),
                       ),
                     ],
                   ),
@@ -239,3 +236,4 @@ class _CardProdutoState extends State<CardProduto> {
     );
   }
 }
+

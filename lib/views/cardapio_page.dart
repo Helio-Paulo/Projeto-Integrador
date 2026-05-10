@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/produto.dart';
+import '../models/item_carrinho.dart';
+import '../controllers/carrinho_controller.dart';
+import 'carrinho_page.dart';
 
 class CardapioPage extends StatefulWidget {
   const CardapioPage({super.key});
@@ -94,16 +97,29 @@ class _CardapioPageState extends State<CardapioPage> {
         title: const Text("Cardápio", style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.azulPrincipal,
         iconTheme: const IconThemeData(color: Colors.white),
-      ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CarrinhoPage()),
+              ).then((value) => setState(() {}));
+            },
+          ),
+        ],
+      ), // Fim da AppBar
       body: ListView.builder(
         itemCount: meusProdutos.length,
         itemBuilder: (context, index) {
           return CardProduto(produto: meusProdutos[index]);
         },
-      ),
-    );
-  }
-}
+      ), // Fim do ListView.builder
+    ); // Fim do Scaffold
+  } // Fim do Widget build
+
+} // Fim da classe _CardapioPageState
+
 
 // ESTA É A CLASSE QUE DESENHA O ITEM (Onde resolvemos o erro de pixels)
 class CardProduto extends StatefulWidget {
@@ -219,10 +235,30 @@ class _CardProdutoState extends State<CardProduto> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("${widget.produto.nome} adicionado!")),
-                          );
-                        },
+  // 1. Criamos a "ficha" do que será levado para o carrinho
+  final novoItem = ItemCarrinho(
+    produto: widget.produto,
+    opcao: opcaoSelecionada!, // A opção (ex: Com Gelo) que está selecionada no Dropdown
+    quantidade: quantidade,    // A quantidade que você definiu nos botões + e -
+  );
+
+  // 2. AQUI ESTÁ A MÁGICA: Enviamos para a lista global do Controller
+  CarrinhoController.adicionar(novoItem);
+
+  // 3. Mostramos o aviso na tela
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text("${widget.produto.nome} adicionado ao carrinho!"),
+      backgroundColor: Colors.green,
+      duration: const Duration(seconds: 1),
+    ),
+  );
+
+  // Opcional: Voltar a quantidade para 1 depois de adicionar
+  setState(() {
+    quantidade = 1;
+  });
+},
                         child: const Text("Adicionar", style: TextStyle(color: Colors.white, fontSize: 12)),
                       ),
                     ],

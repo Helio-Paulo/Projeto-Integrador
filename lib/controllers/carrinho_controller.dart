@@ -1,8 +1,11 @@
 import '../models/item_carrinho.dart';
 
 class CarrinhoController {
-  // Lista estática para que os dados não sumam ao trocar de tela
+  
   static List<ItemCarrinho> itens = [];
+
+  
+  static String formaPagamento = "Dinheiro"; 
 
   // Adiciona um item ao carrinho
   static void adicionar(ItemCarrinho novoItem) {
@@ -14,7 +17,6 @@ class CarrinhoController {
     itens.removeAt(index);
   }
 
-  // Calcula o valor total de todos os itens
   static double get valorTotal {
     double total = 0.0;
     for (var item in itens) {
@@ -23,9 +25,12 @@ class CarrinhoController {
     return total;
   }
 
-  // Limpa o carrinho após o pedido ser enviado ao banco de dados
+  
   static void limpar() {
     itens.clear();
+    
+    formaPagamento = "Dinheiro"; 
   }
 }
+
 

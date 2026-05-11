@@ -99,8 +99,9 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   ),
                 ),
                 // RODAPÉ COM O TOTAL
+                // RODAPÉ COM O TOTAL
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 40), // Ajustei o fundo aqui!
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
@@ -111,6 +112,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     ],
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -139,7 +141,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                           minimumSize: const Size(double.infinity, 50),
                         ),
                         onPressed: () {
-                          // Aqui chamaremos a função de salvar no Supabase depois!
+                          // CHAMADA CORRIGIDA AQUI:
+                          _mostrarPagamento();
                         },
                         child: const Text(
                           "FINALIZAR PEDIDO",
@@ -153,5 +156,93 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             ),
     );
   }
-}
 
+  // ADICIONE ESTA FUNÇÃO QUE ESTAVA FALTANDO:
+  void _mostrarPagamento() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Como deseja pagar?", 
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: const Icon(Icons.pix, color: Colors.blue),
+                title: const Text("Pix"),
+                onTap: () {
+                  CarrinhoController.formaPagamento = "Pix";
+                  Navigator.pop(context);
+                  _confirmarPedido();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.credit_card, color: Colors.purple),
+                title: const Text("Cartão"),
+                onTap: () {
+                  CarrinhoController.formaPagamento = "Cartão";
+                  Navigator.pop(context);
+                  _confirmarPedido();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.payments, color: Colors.green),
+                title: const Text("Dinheiro"),
+                onTap: () {
+                  CarrinhoController.formaPagamento = "Dinheiro";
+                  Navigator.pop(context);
+                  _confirmarPedido();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmarPedido() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar Pedido?"),
+        content: Text(
+          "Total: R\$ ${CarrinhoController.valorTotal.toStringAsFixed(2)}\n"
+          "Pagamento: ${CarrinhoController.formaPagamento}"
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("CANCELAR")
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _finalizarVendaSucesso();
+            }, 
+            child: const Text("CONFIRMAR")
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _finalizarVendaSucesso() {
+    setState(() {
+      CarrinhoController.limpar();
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Pedido enviado com sucesso! ✅"),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+}

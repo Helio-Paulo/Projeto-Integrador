@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/carrinho_controller.dart';
 import '../core/app_colors.dart';
+import 'package:flutter/services.dart'; 
 
 class CarrinhoPage extends StatefulWidget {
   const CarrinhoPage({super.key});
@@ -159,53 +160,122 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
   // ADICIONE ESTA FUNÇÃO QUE ESTAVA FALTANDO:
   void _mostrarPagamento() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      // O SafeArea evita que o conteúdo fique embaixo da barra do Android
+      return SafeArea(
+        child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // Ajusta o tamanho ao conteúdo
             children: [
-              const Text("Como deseja pagar?", 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
+              const Text(
+                "Escolha a Forma de Pagamento",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 15),
+              
+              // Opção PIX
               ListTile(
                 leading: const Icon(Icons.pix, color: Colors.blue),
-                title: const Text("Pix"),
+                title: const Text("Pix (Copia e Cola)"),
+                subtitle: const Text("Pague agora para agilizar seu pedido"),
                 onTap: () {
                   CarrinhoController.formaPagamento = "Pix";
                   Navigator.pop(context);
-                  _confirmarPedido();
+                  _mostrarChavePix(); // Nova função para mostrar a chave
                 },
               ),
+
+              // Opção Cartão
               ListTile(
                 leading: const Icon(Icons.credit_card, color: Colors.purple),
-                title: const Text("Cartão"),
+                title: const Text("Cartão de Crédito/Débito"),
+                subtitle: const Text("O entregador levará a maquininha"),
                 onTap: () {
                   CarrinhoController.formaPagamento = "Cartão";
                   Navigator.pop(context);
                   _confirmarPedido();
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.payments, color: Colors.green),
-                title: const Text("Dinheiro"),
-                onTap: () {
-                  CarrinhoController.formaPagamento = "Dinheiro";
-                  Navigator.pop(context);
-                  _confirmarPedido();
-                },
-              ),
+              const SizedBox(height: 10), // Espaço extra no final
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
+void _mostrarChavePix() {
+  const String chavePix = "suachavepix@email.com"; // Sua chave aqui
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Pagamento via Pix"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text("Clique no ícone para copiar a chave:"),
+          const SizedBox(height: 15),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    chavePix,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy, color: Colors.blue),
+                  onPressed: () {
+                    // COMANDO MÁGICO PARA COPIAR
+                    Clipboard.setData(const ClipboardData(text: chavePix));
+                    
+                    // Aviso rápido que copiou
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Chave Pix copiada!"),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 15),
+          const Text("Após pagar, clique em Confirmar.", style: TextStyle(fontSize: 12)),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("VOLTAR"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            _confirmarPedido();
+          },
+          child: const Text("JÁ PAGUEI / CONFIRMAR"),
+        ),
+      ],
+    ),
+  );
+}
 
   void _confirmarPedido() {
     showDialog(
@@ -246,3 +316,4 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 }
+

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_colors.dart';
 import 'cardapio_page.dart';
+import '../core/globals.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -30,7 +31,10 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.branco,
       appBar: AppBar(
-        title: const Text("Identificação", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Identificação",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: AppColors.azulPrincipal,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -42,7 +46,11 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const Text(
                 "Como deseja se identificar?",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.azulPrincipal),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.azulPrincipal,
+                ),
               ),
               const SizedBox(height: 10),
               const Text(
@@ -50,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 30),
-              
+
               // Nome
               TextField(
                 controller: _nomeController,
@@ -92,7 +100,9 @@ class _LoginPageState extends State<LoginPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.azulPrincipal,
                   minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: () async {
                   String nome = _nomeController.text;
@@ -101,41 +111,55 @@ class _LoginPageState extends State<LoginPage> {
 
                   if (nome.isEmpty || mesa.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Por favor, preencha pelo menos Nome e Mesa!")),
+                      const SnackBar(
+                        content: Text(
+                          "Por favor, preencha pelo menos Nome e Mesa!",
+                        ),
+                      ),
                     );
                   } else {
                     try {
-                      // Comando para salvar no Supabase
+                      // 1. Salva no banco de clientes
                       await Supabase.instance.client.from('clientes').insert({
                         'nome': nome,
                         'mesa': mesa,
                         'email': email.isEmpty ? 'sem@email.com' : email,
                       });
-
-                      // Verifica se a tela ainda está ativa (mounted)
+                      Globals.mesaAtiva = mesa;
+                      
                       if (!context.mounted) return;
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Identificado com sucesso!")),
+                        const SnackBar(
+                          content: Text("Identificado com sucesso!"),
+                        ),
                       );
 
-                      // Navega para o Cardápio
+                      // 2. Navega para o Cardápio
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const CardapioPage()),
+                        MaterialPageRoute(
+                          builder: (context) => const CardapioPage(),
+                        ),
                       );
-
                     } catch (erro) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Erro ao salvar no banco: $erro")),
+                        SnackBar(
+                          content: Text("Erro ao salvar no banco: $erro"),
+                        ),
                       );
                     }
                   }
                 },
+
                 child: const Text(
                   "CONFIRMAR E CONTINUAR",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -145,4 +169,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-

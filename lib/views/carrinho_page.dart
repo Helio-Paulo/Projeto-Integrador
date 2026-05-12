@@ -3,6 +3,7 @@ import '../controllers/carrinho_controller.dart';
 import '../core/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/globals.dart';
 
 class CarrinhoPage extends StatefulWidget {
   const CarrinhoPage({super.key});
@@ -164,7 +165,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-  // ADICIONE ESTA FUNÇÃO QUE ESTAVA FALTANDO:
+  
   void _mostrarPagamento() {
     showModalBottomSheet(
       context: context,
@@ -198,14 +199,46 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 ),
 
                 // Opção Cartão
-                ListTile(
+               ListTile(
                   leading: const Icon(Icons.credit_card, color: Colors.purple),
                   title: const Text("Cartão de Crédito/Débito"),
                   subtitle: const Text("O entregador levará a maquininha"),
-                  onTap: () {
-                    CarrinhoController.formaPagamento = "Cartão";
-                    Navigator.pop(context);
-                    _confirmarPedido();
+                  onTap: () async {
+                    // 1. Guardamos as referências de segurança
+                    final navigator = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    try {
+                      final supabase = Supabase.instance.client;
+
+                      // Cria o resumo do que foi comprado
+                      String resumoItens = CarrinhoController.itens
+                          .map((item) => "${item.quantidade}x ${item.produto.nome} (${item.opcao.descricao})")
+                          .join(", ");
+
+                      // 2. ENVIO PARA O BANCO DE DADOS
+                      await supabase.from('pedidos').insert({
+                        'itens': resumoItens,
+                        'valor_total': CarrinhoController.valorTotal,
+                        'forma_pagamento': 'Cartão',
+                        'mesa': Globals.mesaAtiva, // Mesa vinda do login
+                        'status': 'Pendente',
+                      });
+
+                      if (!mounted) return;
+
+                      navigator.pop(); // Fecha o menu de pagamento
+                      _finalizarVendaSucesso(); // Limpa o carrinho
+
+                    } catch (e) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text("Erro ao processar cartão: $e"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                 ),
                 const SizedBox(height: 10), // Espaço extra no final
@@ -294,11 +327,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     .join(", ");
 
                 // 2. Operação assíncrona (falar com o banco)
+                // No arquivo carrinho_page.dart
                 await supabase.from('pedidos').insert({
                   'itens': resumoItens,
                   'valor_total': CarrinhoController.valorTotal,
-                  'forma_pagamento': CarrinhoController.formaPagamento,
-                  'mesa': 'Mesa 01',
+                  'forma_pagamento': 'Pix', 
+                  'mesa': Globals.mesaAtiva, 
                   'status': 'Pendente',
                 });
 
@@ -325,31 +359,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-  void _confirmarPedido() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Confirmar Pedido?"),
-        content: Text(
-          "Total: R\$ ${CarrinhoController.valorTotal.toStringAsFixed(2)}\n"
-          "Pagamento: ${CarrinhoController.formaPagamento}",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCELAR"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _finalizarVendaSucesso();
-            },
-            child: const Text("CONFIRMAR"),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _finalizarVendaSucesso() {
     setState(() {
@@ -364,4 +373,5 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 }
+
 

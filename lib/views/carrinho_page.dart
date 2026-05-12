@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../controllers/carrinho_controller.dart';
 import '../core/app_colors.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CarrinhoPage extends StatefulWidget {
   const CarrinhoPage({super.key});
@@ -102,7 +103,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 // RODAPÉ COM O TOTAL
                 // RODAPÉ COM O TOTAL
                 Container(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 40), // Ajustei o fundo aqui!
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                    bottom: 40,
+                  ), // Ajustei o fundo aqui!
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
@@ -160,122 +166,164 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
   // ADICIONE ESTA FUNÇÃO QUE ESTAVA FALTANDO:
   void _mostrarPagamento() {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      // O SafeArea evita que o conteúdo fique embaixo da barra do Android
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // Ajusta o tamanho ao conteúdo
-            children: [
-              const Text(
-                "Escolha a Forma de Pagamento",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 15),
-              
-              // Opção PIX
-              ListTile(
-                leading: const Icon(Icons.pix, color: Colors.blue),
-                title: const Text("Pix (Copia e Cola)"),
-                subtitle: const Text("Pague agora para agilizar seu pedido"),
-                onTap: () {
-                  CarrinhoController.formaPagamento = "Pix";
-                  Navigator.pop(context);
-                  _mostrarChavePix(); // Nova função para mostrar a chave
-                },
-              ),
-
-              // Opção Cartão
-              ListTile(
-                leading: const Icon(Icons.credit_card, color: Colors.purple),
-                title: const Text("Cartão de Crédito/Débito"),
-                subtitle: const Text("O entregador levará a maquininha"),
-                onTap: () {
-                  CarrinhoController.formaPagamento = "Cartão";
-                  Navigator.pop(context);
-                  _confirmarPedido();
-                },
-              ),
-              const SizedBox(height: 10), // Espaço extra no final
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-void _mostrarChavePix() {
-  const String chavePix = "suachavepix@email.com"; // Sua chave aqui
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Pagamento via Pix"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text("Clique no ícone para copiar a chave:"),
-          const SizedBox(height: 15),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        // O SafeArea evita que o conteúdo fique embaixo da barra do Android
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Ajusta o tamanho ao conteúdo
               children: [
-                Expanded(
-                  child: Text(
-                    chavePix,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
+                const Text(
+                  "Escolha a Forma de Pagamento",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.copy, color: Colors.blue),
-                  onPressed: () {
-                    // COMANDO MÁGICO PARA COPIAR
-                    Clipboard.setData(const ClipboardData(text: chavePix));
-                    
-                    // Aviso rápido que copiou
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Chave Pix copiada!"),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
+                const SizedBox(height: 15),
+
+                // Opção PIX
+                ListTile(
+                  leading: const Icon(Icons.pix, color: Colors.blue),
+                  title: const Text("Pix (Copia e Cola)"),
+                  subtitle: const Text("Pague agora para agilizar seu pedido"),
+                  onTap: () {
+                    CarrinhoController.formaPagamento = "Pix";
+                    Navigator.pop(context);
+                    _mostrarChavePix(); // Nova função para mostrar a chave
                   },
                 ),
+
+                // Opção Cartão
+                ListTile(
+                  leading: const Icon(Icons.credit_card, color: Colors.purple),
+                  title: const Text("Cartão de Crédito/Débito"),
+                  subtitle: const Text("O entregador levará a maquininha"),
+                  onTap: () {
+                    CarrinhoController.formaPagamento = "Cartão";
+                    Navigator.pop(context);
+                    _confirmarPedido();
+                  },
+                ),
+                const SizedBox(height: 10), // Espaço extra no final
               ],
             ),
           ),
-          const SizedBox(height: 15),
-          const Text("Após pagar, clique em Confirmar.", style: TextStyle(fontSize: 12)),
+        );
+      },
+    );
+  }
+
+  void _mostrarChavePix() {
+    const String chavePix = "suachavepix@email.com"; // Sua chave aqui
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Pagamento via Pix"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Clique no ícone para copiar a chave:"),
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      chavePix,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, color: Colors.blue),
+                    onPressed: () {
+                      // COMANDO MÁGICO PARA COPIAR
+                      Clipboard.setData(const ClipboardData(text: chavePix));
+
+                      // Aviso rápido que copiou
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Chave Pix copiada!"),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              "Após pagar, clique em Confirmar.",
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("VOLTAR"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // 1. Guardamos as referências ANTES do await para evitar o erro de 'async gaps'
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
+              try {
+                final supabase = Supabase.instance.client;
+
+                String resumoItens = CarrinhoController.itens
+                    .map(
+                      (item) =>
+                          "${item.quantidade}x ${item.produto.nome} (${item.opcao.descricao})",
+                    )
+                    .join(", ");
+
+                // 2. Operação assíncrona (falar com o banco)
+                await supabase.from('pedidos').insert({
+                  'itens': resumoItens,
+                  'valor_total': CarrinhoController.valorTotal,
+                  'forma_pagamento': CarrinhoController.formaPagamento,
+                  'mesa': 'Mesa 01',
+                  'status': 'Pendente',
+                });
+
+                // 3. Usamos as variáveis que guardamos lá no início
+                if (!mounted) return;
+
+                navigator.pop(); // Fecha o diálogo usando a referência salva
+                _finalizarVendaSucesso(); // Limpa o carrinho
+              } catch (e) {
+                if (!mounted) return;
+
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text("Erro ao enviar pedido: $e"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text("CONFIRMAR"),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("VOLTAR"),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _confirmarPedido();
-          },
-          child: const Text("JÁ PAGUEI / CONFIRMAR"),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
   void _confirmarPedido() {
     showDialog(
@@ -284,19 +332,19 @@ void _mostrarChavePix() {
         title: const Text("Confirmar Pedido?"),
         content: Text(
           "Total: R\$ ${CarrinhoController.valorTotal.toStringAsFixed(2)}\n"
-          "Pagamento: ${CarrinhoController.formaPagamento}"
+          "Pagamento: ${CarrinhoController.formaPagamento}",
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: const Text("CANCELAR")
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCELAR"),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _finalizarVendaSucesso();
-            }, 
-            child: const Text("CONFIRMAR")
+            },
+            child: const Text("CONFIRMAR"),
           ),
         ],
       ),
@@ -307,7 +355,7 @@ void _mostrarChavePix() {
     setState(() {
       CarrinhoController.limpar();
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Pedido enviado com sucesso! ✅"),

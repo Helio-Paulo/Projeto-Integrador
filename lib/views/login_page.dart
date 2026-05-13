@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_colors.dart';
 import 'cardapio_page.dart';
 import '../core/globals.dart';
+import 'admin_dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,6 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool _carregando = false;
   // Controladores para capturar o que o usuário digita
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -104,54 +106,79 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () async {
-                  String nome = _nomeController.text;
-                  String mesa = _mesaController.text;
-                  String email = _emailController.text;
+                onPressed: _carregando
+                    ? null
+                    : () async {
+                        // BLOQUEIA CLIQUE DUPLO
+                        String nome = _nomeController.text.trim();
+                        String mesa = _mesaController.text.trim();
+                        String email = _emailController.text.trim();
 
-                  if (nome.isEmpty || mesa.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Por favor, preencha pelo menos Nome e Mesa!",
-                        ),
-                      ),
-                    );
-                  } else {
-                    try {
-                      // 1. Salva no banco de clientes
-                      await Supabase.instance.client.from('clientes').insert({
-                        'nome': nome,
-                        'mesa': mesa,
-                        'email': email.isEmpty ? 'sem@email.com' : email,
-                      });
-                      Globals.mesaAtiva = mesa;
-                      
-                      if (!context.mounted) return;
+                        if (nome.isEmpty || mesa.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Por favor, preencha Nome e Mesa!"),
+                            ),
+                          );
+                          return;
+                        }
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Identificado com sucesso!"),
-                        ),
-                      );
+                        setState(() => _carregando = true); // COMEÇA A CARREGAR
 
-                      // 2. Navega para o Cardápio
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CardapioPage(),
-                        ),
-                      );
-                    } catch (erro) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Erro ao salvar no banco: $erro"),
-                        ),
-                      );
-                    }
-                  }
-                },
+                        try {
+                          // --- PASSO 1: VERIFICA SE É ADMIN ANTES DE SALVAR ---
+                          if (nome.toLowerCase() == 'admin' && mesa == '999') {
+                            if (!context.mounted) return;
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminDashboardPage(),
+                              ),
+                            );
+                            return; // SAI DA FUNÇÃO AQUI (NÃO SALVA NO BANCO)
+                          }
+
+                          // --- PASSO 2: SÓ CHEGA AQUI SE FOR CLIENTE COMUM ---
+                          await Supabase.instance.client
+                              .from('clientes')
+                              .insert({
+                                'nome': nome,
+                                'mesa': mesa,
+                                'email': email.isEmpty
+                                    ? 'sem@email.com'
+                                    : email,
+                              });
+
+                          Globals.mesaAtiva = mesa;
+
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Identificado com sucesso!"),
+                            ),
+                          );
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CardapioPage(),
+                            ),
+                          );
+                        } catch (erro) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Erro ao entrar: $erro")),
+                          );
+                        } finally {
+                          if (mounted){
+                            setState(
+                              () => _carregando = false,
+                            ); // LIBERA O BOTÃO
+                          }
+                        }
+                      },
 
                 child: const Text(
                   "CONFIRMAR E CONTINUAR",

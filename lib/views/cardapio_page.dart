@@ -4,6 +4,8 @@ import '../models/produto.dart';
 import '../models/item_carrinho.dart';
 import '../controllers/carrinho_controller.dart';
 import 'carrinho_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/globals.dart';
 
 class CardapioPage extends StatefulWidget {
   const CardapioPage({super.key});
@@ -46,7 +48,7 @@ class _CardapioPageState extends State<CardapioPage> {
     Produto(
       nome: "Caipirinha de Limão",
       categoria: "Bebidas",
-      imagemPath: "assets/caipirinha_limao.jpg", 
+      imagemPath: "assets/caipirinha_limao.jpg",
       opcoes: [OpcaoProduto(descricao: "Tradicional", preco: 15.0)],
     ),
     Produto(
@@ -70,7 +72,7 @@ class _CardapioPageState extends State<CardapioPage> {
     Produto(
       nome: "Sorvete",
       categoria: "Sobremesas",
-      imagemPath: "assets/sorvete_chocolate.jpg", 
+      imagemPath: "assets/sorvete_chocolate.jpg",
       opcoes: [
         OpcaoProduto(descricao: "Chocolate", preco: 15.0),
         OpcaoProduto(descricao: "Flocos", preco: 15.0),
@@ -96,8 +98,16 @@ class _CardapioPageState extends State<CardapioPage> {
       appBar: AppBar(
         title: const Text("Cardápio", style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.azulPrincipal,
-        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          // Botão discreto na barra superior
+          TextButton.icon(
+            onPressed: () => _mostrarStatusDoPedido(context),
+            icon: const Icon(Icons.timer, color: Colors.orange),
+            label: const Text(
+              "MEU PEDIDO",
+              style: TextStyle(color: Colors.white, fontSize: 11),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
@@ -108,18 +118,90 @@ class _CardapioPageState extends State<CardapioPage> {
             },
           ),
         ],
-      ), // Fim da AppBar
+      ),
       body: ListView.builder(
         itemCount: meusProdutos.length,
         itemBuilder: (context, index) {
           return CardProduto(produto: meusProdutos[index]);
         },
-      ), // Fim do ListView.builder
-    ); // Fim do Scaffold
-  } // Fim do Widget build
+      ),
+     );
+   } // Fim do ListView.builder
 
-} // Fim da classe _CardapioPageState
+      
+  void _mostrarStatusDoPedido(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          height: 300,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const Text(
+                "Acompanhar Preparo",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const Divider(),
+              const SizedBox(height: 20),
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: Supabase.instance.client
+                    .from('pedidos')
+                    .stream(primaryKey: ['id'])
+                    .eq('mesa', Globals.mesaAtiva)
+                    .order('created_at', ascending: false)
+                    .limit(1),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return const Text("Erro ao carregar pedido");
+                  }
 
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text("Nenhum pedido encontrado."),
+                    );
+                  }
+
+                  final pedido = snapshot.data!.first;
+
+                  return Column(
+                    children: [
+                      Text(
+                        "Sua Senha",
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      Text(
+                        "${pedido['senha'] ?? '---'}",
+                        style: const TextStyle(
+                          fontSize: 45,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Status: ${pedido['status'].toString().toUpperCase()}",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: pedido['status'] == 'pronto'
+                              ? Colors.green
+                              : Colors.orange,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 // ESTA É A CLASSE QUE DESENHA O ITEM (Onde resolvemos o erro de pixels)
 class CardProduto extends StatefulWidget {
@@ -160,7 +242,9 @@ class _CardProdutoState extends State<CardProduto> {
                 width: 80,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  height: 80, width: 80, color: Colors.grey[200],
+                  height: 80,
+                  width: 80,
+                  color: Colors.grey[200],
                   child: const Icon(Icons.fastfood, color: Colors.grey),
                 ),
               ),
@@ -175,7 +259,10 @@ class _CardProdutoState extends State<CardProduto> {
                 children: [
                   Text(
                     widget.produto.nome,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 5),
 
@@ -200,7 +287,9 @@ class _CardProdutoState extends State<CardProduto> {
                           );
                         }).toList(),
                         onChanged: (novaOpcao) {
-                          setState(() { opcaoSelecionada = novaOpcao; });
+                          setState(() {
+                            opcaoSelecionada = novaOpcao;
+                          });
                         },
                       ),
                     ),
@@ -215,16 +304,40 @@ class _CardProdutoState extends State<CardProduto> {
                       Row(
                         children: [
                           GestureDetector(
-                            onTap: () { if (quantidade > 1) setState(() { quantidade--; }); },
-                            child: const Icon(Icons.remove_circle, color: Colors.red, size: 24),
+                            onTap: () {
+                              if (quantidade > 1) {
+                                setState(() {
+                                  quantidade--;
+                                });
+                              }
+                            },
+                            child: const Icon(
+                              Icons.remove_circle,
+                              color: Colors.red,
+                              size: 24,
+                            ),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text("$quantidade", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              "$quantidade",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           GestureDetector(
-                            onTap: () { setState(() { quantidade++; }); },
-                            child: const Icon(Icons.add_circle, color: Colors.green, size: 24),
+                            onTap: () {
+                              setState(() {
+                                quantidade++;
+                              });
+                            },
+                            child: const Icon(
+                              Icons.add_circle,
+                              color: Colors.green,
+                              size: 24,
+                            ),
                           ),
                         ],
                       ),
@@ -232,34 +345,43 @@ class _CardProdutoState extends State<CardProduto> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.azulPrincipal,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                         onPressed: () {
-  // 1. Criamos a "ficha" do que será levado para o carrinho
-  final novoItem = ItemCarrinho(
-    produto: widget.produto,
-    opcao: opcaoSelecionada!, // A opção (ex: Com Gelo) que está selecionada no Dropdown
-    quantidade: quantidade,    // A quantidade que você definiu nos botões + e -
-  );
+                          // 1. Criamos a "ficha" do que será levado para o carrinho
+                          final novoItem = ItemCarrinho(
+                            produto: widget.produto,
+                            opcao:
+                                opcaoSelecionada!, // A opção (ex: Com Gelo) que está selecionada no Dropdown
+                            quantidade:
+                                quantidade, // A quantidade que você definiu nos botões + e -
+                          );
 
-  // 2. AQUI ESTÁ A MÁGICA: Enviamos para a lista global do Controller
-  CarrinhoController.adicionar(novoItem);
+                          // 2. AQUI ESTÁ A MÁGICA: Enviamos para a lista global do Controller
+                          CarrinhoController.adicionar(novoItem);
 
-  // 3. Mostramos o aviso na tela
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text("${widget.produto.nome} adicionado ao carrinho!"),
-      backgroundColor: Colors.green,
-      duration: const Duration(seconds: 1),
-    ),
-  );
+                          // 3. Mostramos o aviso na tela
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "${widget.produto.nome} adicionado ao carrinho!",
+                              ),
+                              backgroundColor: Colors.green,
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
 
-  // Opcional: Voltar a quantidade para 1 depois de adicionar
-  setState(() {
-    quantidade = 1;
-  });
-},
-                        child: const Text("Adicionar", style: TextStyle(color: Colors.white, fontSize: 12)),
+                          // Opcional: Voltar a quantidade para 1 depois de adicionar
+                          setState(() {
+                            quantidade = 1;
+                          });
+                        },
+                        child: const Text(
+                          "Adicionar",
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -272,4 +394,3 @@ class _CardProdutoState extends State<CardProduto> {
     );
   }
 }
-

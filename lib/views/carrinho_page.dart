@@ -165,7 +165,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-  
   void _mostrarPagamento() {
     showModalBottomSheet(
       context: context,
@@ -199,7 +198,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 ),
 
                 // Opção Cartão
-               ListTile(
+                ListTile(
                   leading: const Icon(Icons.credit_card, color: Colors.purple),
                   title: const Text("Cartão de Crédito/Débito"),
                   subtitle: const Text("O entregador levará a maquininha"),
@@ -213,8 +212,11 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
                       // Cria o resumo do que foi comprado
                       String resumoItens = CarrinhoController.itens
-                          .map((item) => "${item.quantidade}x ${item.produto.nome} (${item.opcao.descricao})")
-                          .join(", ");
+                          .map(
+                            (item) =>
+                                "${item.quantidade}x ${item.produto.nome} (${item.opcao.descricao})",
+                          )
+                          .join("\n"); // MUDANÇA AQUI: trocamos ", " por "\n"
 
                       // 2. ENVIO PARA O BANCO DE DADOS
                       await supabase.from('pedidos').insert({
@@ -229,7 +231,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
                       navigator.pop(); // Fecha o menu de pagamento
                       _finalizarVendaSucesso(); // Limpa o carrinho
-
                     } catch (e) {
                       if (!mounted) return;
                       messenger.showSnackBar(
@@ -331,8 +332,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 await supabase.from('pedidos').insert({
                   'itens': resumoItens,
                   'valor_total': CarrinhoController.valorTotal,
-                  'forma_pagamento': 'Pix', 
-                  'mesa': Globals.mesaAtiva, 
+                  'forma_pagamento': 'Pix',
+                  'mesa': Globals.mesaAtiva,
                   'status': 'Pendente',
                 });
 
@@ -359,7 +360,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-
   void _finalizarVendaSucesso() {
     setState(() {
       CarrinhoController.limpar();
@@ -371,7 +371,15 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
         backgroundColor: Colors.green,
       ),
     );
+
+    // ACRESCENTE ESTA PARTE AQUI:
+    // Como o carrinho acabou de ser limpo, voltamos para o cardápio
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted && CarrinhoController.itens.isEmpty) {
+        Navigator.of(
+          context,
+        ).pop(); // Fecha a página do carrinho e volta ao cardápio
+      }
+    });
   }
 }
-
-

@@ -4,6 +4,7 @@ import '../core/app_colors.dart';
 import 'cardapio_page.dart';
 import '../core/globals.dart';
 import 'admin_dashboard_page.dart';
+import 'cozinha_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -126,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                         setState(() => _carregando = true); // COMEÇA A CARREGAR
 
                         try {
-                          // --- PASSO 1: VERIFICA SE É ADMIN ANTES DE SALVAR ---
+                          // --- PASSO 1: VERIFICA SE É ADMIN ---
                           if (nome.toLowerCase() == 'admin' && mesa == '999') {
                             if (!context.mounted) return;
                             Navigator.pushReplacement(
@@ -136,7 +137,21 @@ class _LoginPageState extends State<LoginPage> {
                                     const AdminDashboardPage(),
                               ),
                             );
-                            return; // SAI DA FUNÇÃO AQUI (NÃO SALVA NO BANCO)
+                            return;
+                          }
+
+                          // --- PASSO 1.5: VERIFICA SE É A COZINHA (NOVO DESVIO) ---
+                          if (nome.toLowerCase() == 'cozinha' &&
+                              mesa == '888') {
+                            if (!context.mounted) return;
+                            Navigator.pushReplacement(
+                              context,
+                              // Aqui você vai criar a CozinhaPage depois, por enquanto o VS Code vai marcar erro
+                              MaterialPageRoute(
+                                builder: (context) => const CozinhaPage(),
+                              ),
+                            );
+                            return;
                           }
 
                           // --- PASSO 2: SÓ CHEGA AQUI SE FOR CLIENTE COMUM ---
@@ -149,7 +164,6 @@ class _LoginPageState extends State<LoginPage> {
                                     ? 'sem@email.com'
                                     : email,
                               });
-
                           Globals.mesaAtiva = mesa;
 
                           if (!context.mounted) return;
@@ -172,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                             SnackBar(content: Text("Erro ao entrar: $erro")),
                           );
                         } finally {
-                          if (mounted){
+                          if (mounted) {
                             setState(
                               () => _carregando = false,
                             ); // LIBERA O BOTÃO
